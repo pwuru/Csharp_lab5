@@ -7,13 +7,24 @@ namespace WinFormsApp5
         List<BaseObject> objects = new();
         Player player;
         Marker marker;
+        GreenCircle greenCircle;
+        Random random = new Random();
+        int score = 0;
         public Form1()
         {
             InitializeComponent();
+            label1.Text = "Очки: 0";
             player = new Player(pbMain.Width / 2, pbMain.Height / 2, 0);
             player.OnOverlap += (p, obj) =>
             {
                 txtLog.Text = $"[{DateTime.Now:HH:mm:ss:ff}] Игрок пересекся с {obj}\n" + txtLog.Text;
+                if (obj is GreenCircle)
+                {
+                    objects.Remove(obj);
+                    score += 1;
+                    label1.Text = "Очки: " + score;
+                    SpawnGreenCircle();
+                }
             };
             player.OnMarkerOverlap += (m) =>
             {
@@ -21,10 +32,31 @@ namespace WinFormsApp5
                 marker = null;
             };
             marker = new Marker(pbMain.Width / 2 + 50, pbMain.Height / 2 + 50, 0);
+            SpawnGreenCircle();
             objects.Add(marker);
             objects.Add(player);
-            objects.Add(new MyRectangle(50, 50, 0));
-            objects.Add(new MyRectangle(100, 100, 45));
+            //objects.Add(new MyRectangle(50, 50, 0));
+            //objects.Add(new MyRectangle(100, 100, 45));
+        }
+
+        private void SpawnGreenCircle()
+        {
+            greenCircle = new GreenCircle(
+                random.Next(20, pbMain.Width - 20),
+                random.Next(20, pbMain.Height - 20),
+                0);
+
+            greenCircle.OnLifeEnd += GreenCircle_OnLifeEnd;
+            objects.Add(greenCircle);
+        }
+
+        private void GreenCircle_OnLifeEnd(GreenCircle gc)
+        {
+            // Перемещаем кружок и сбрасываем таймер
+            gc.X = random.Next(20, pbMain.Width - 20);
+            gc.Y = random.Next(20, pbMain.Height - 20);
+            gc.ResetLife();
+            pbMain.Invalidate(); // сразу перерисовать
         }
 
         private void pbMain_Paint(object sender, PaintEventArgs e)
@@ -76,7 +108,9 @@ namespace WinFormsApp5
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            // updatePlayer(); убрал отсюда
+            foreach (var obj in objects.OfType<GreenCircle>())
+                obj.UpdateLife();
+
             pbMain.Invalidate();
         }
 
